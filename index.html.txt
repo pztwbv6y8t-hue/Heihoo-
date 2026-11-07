@@ -1,0 +1,146 @@
+html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>平方完成 問題自動生成ツール</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f7fa; color: #333; }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; }
+        .config-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; gap: 15px; align-items: center; justify-content: center; flex-wrap: wrap; }
+        input[type="number"] { width: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; text-align: center; }
+        button { background: #3498db; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #2980b9; }
+        .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h2 { border-left: 5px solid #3498db; padding-left: 10px; margin-top: 0; color: #2c3e50; }
+        .list-item { font-size: 18px; margin: 12px 0; font-family: 'Courier New', Courier, monospace; word-break: break-all; }
+        #answer-section { display: none; }
+        .toggle-btn { background: #e67e22; margin-top: 10px; }
+        .toggle-btn:hover { background: #d35400; }
+    </style>
+</head>
+<body>
+
+    <h1>✨ 平方完成 問題ジェネレーター</h1>
+
+    <div class="config-box">
+        <label for="prob-count">作問数：</label>
+        <input type="number" id="prob-count" value="5" min="1" max="50">
+        <button onclick="generateProblems()">問題を生成する</button>
+    </div>
+
+    <div class="section" id="problem-section" style="display:none;">
+        <h2>📝 問題</h2>
+        <div id="problem-list"></div>
+        <button class="toggle-btn" onclick="toggleAnswers()">答えを表示 / 非表示</button>
+    </div>
+
+    <div class="section" id="answer-section">
+        <h2>💡 解答</h2>
+        <div id="answer-list"></div>
+    </div>
+
+    <script>
+        // 分数を扱うための簡易クラス
+        class Fraction {
+            constructor(num, den = 1) {
+                if (den === 0) throw new Error("⚠️ 分母に0は指定できません");
+                let g = Fraction.gcd(Math.abs(num), Math.abs(den));
+                this.num = num / g;
+                this.den = den / g;
+                if (this.den < 0) { this.num = -this.num; this.den = -this.den; }
+            }
+            static gcd(a, b) { return b === 0 ? a : Fraction.gcd(b, a % b); }
+            add(f) { return new Fraction(this.num * f.den + f.num * this.den, this.den * f.den); }
+            sub(f) { return new Fraction(this.num * f.den - f.num * this.den, this.den * f.den); }
+            mul(f) { return new Fraction(this.num * f.num, this.den * f.den); }
+            neg() { return new Fraction(-this.num, this.den); }
+            abs() { return new Fraction(Math.abs(this.num), this.den); }
+            toString() { return this.den === 1 ? `${this.num}` : `${this.num}/${this.den}`; }
+        }
+
+        function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+        function formatTerm(f, power, isFirst = false) {
+            if (f.num === 0) return "";
+            let sign = f.num < 0 ? (isFirst ? "-" : "- ") : (isFirst ? "" : "+ ");
+            let absF = f.abs();
+            let valStr = absF.toString();
+
+            if (power === 2) {
+                return (absF.num === 1 && absF.den === 1) ? `${f.num < 0 ? "-" : ""}x²` : `${f.num < 0 ? "-" : ""}${valStr}x²`;
+            } else if (power === 1) {
+                return (absF.num === 1 && absF.den === 1) ? `${sign}x` : `${sign}${valStr}x`;
+            } else {
+                return `${sign}${valStr}`;
+            }
+        }
+
+        function generateProblems() {
+            const count = parseInt(document.getElementById('prob-count').value) || 5;
+            const probList = document.getElementById('problem-list');
+            const ansList = document.getElementById('answer-list');
+            
+            probList.innerHTML = '';
+            ansList.innerHTML = '';
+            document.getElementById('answer-section').style.display = 'none';
+
+            const aChoices = [
+                new Fraction(1), new Fraction(2), new Fraction(3), 
+                new Fraction(-1), new Fraction(-2), new Fraction(-3),
+                new Fraction(1, 2), new Fraction(-1, 2)
+            ];
+
+            for (let i = 1; i <= count; i++) {
+                let a = aChoices[Math.floor(Math.random() * aChoices.length)];
+                let p = new Fraction(getRandomInt(-4, 4), [1, 2][Math.floor(Math.random() * 2)]);
+                let q = new Fraction(getRandomInt(-8, 8), [1, 2][Math.floor(Math.random() * 2)]);
+
+                // b = -2ap, c = ap^2 + q
+                let b = a.mul(p).mul(new Fraction(-2));
+                let c = a.mul(p).mul(p).add(q);
+
+                // 問題作成
+                let t2 = formatTerm(a, 2, true);
+                let t1 = formatTerm(b, 1);
+                let t0 = formatTerm(c, 0);
+                let probStr = `y = ${t2} ${t1} ${t0}`.replace(/\s+/g, ' ').trim();
+
+                // 解答作成
+                let aPart = "";
+                if (a.num === -1 && a.den === 1) aPart = "-";
+                else if (!(a.num === 1 && a.den === 1)) aPart = a.toString();
+
+                let ansInside = "";
+                if (p.num === 0) {
+                    ansInside = `${aPart}x²`;
+                } else {
+                    let pSign = p.num < 0 ? "+ " : "- ";
+                    let absP = p.abs().toString();
+                    ansInside = `${aPart}(x ${pSign}${absP})²`;
+                }
+
+                let ansStr = ansInside;
+                if (q.num !== 0) {
+                    let qSign = q.num > 0 ? " + " : " - ";
+                    ansStr += `${qSign}${q.abs().toString()}`;
+                }
+
+                probList.innerHTML += `<div class="list-item">(${i}) &nbsp; ${probStr}</div>`;
+                ansList.innerHTML += `<div class="list-item">(${i}) &nbsp; y = ${ansStr}</div>`;
+            }
+
+            document.getElementById('problem-section').style.display = 'block';
+        }
+
+        function toggleAnswers() {
+            const ansSec = document.getElementById('answer-section');
+            ansSec.style.display = ansSec.style.display === 'none' ? 'block' : 'none';
+            if(ansSec.style.display === 'block') {
+                ansSec.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    </script>
+</body>
+</html>
