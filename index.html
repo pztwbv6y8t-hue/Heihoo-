@@ -17,6 +17,8 @@
         #answer-section { display: none; }
         .toggle-btn { background: #e67e22; margin-top: 10px; }
         .toggle-btn:hover { background: #d35400; }
+        /* 画像用のスタイル */
+        .page-img { display: block; max-width: 250px; width: 100%; margin: 15px auto; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -29,15 +31,21 @@
         <button onclick="generateProblems()">問題を生成する</button>
     </div>
 
+    <!-- 問題セクション -->
     <div class="section" id="problem-section" style="display:none;">
+        <!-- 💡 1枚目の画像を問題の一番上に配置 -->
+        <img src="top.png" alt="キャラクター1" class="page-img">
         <h2>問題</h2>
         <div id="problem-list"></div>
         <button class="toggle-btn" onclick="toggleAnswers()">答えを表示 / 非表示</button>
     </div>
 
+    <!-- 解答セクション -->
     <div class="section" id="answer-section">
         <h2>解答</h2>
         <div id="answer-list"></div>
+        <!-- 💡 2枚目の画像を解答の一番下に配置 -->
+        <img src="bottom.png" alt="キャラクター2" class="page-img">
     </div>
 
     <script>
@@ -84,7 +92,6 @@
             ansList.innerHTML = '';
             document.getElementById('answer-section').style.display = 'none';
 
-            // 記法エラー対策：文字列を分割してリストを生成する方法に切り替えました
             const aBaseInts = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,-1,-2,-3,-4,-5,-6,-7,-8,-9,-10,-11,-12,-13,-14,-15".split(",").map(Number);
             const denChoices = "1,2,3,5,7".split(",").map(Number);
 
