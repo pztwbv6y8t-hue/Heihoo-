@@ -94,8 +94,13 @@ html
 
             for (let i = 1; i <= count; i++) {
                 let a = aChoices[Math.floor(Math.random() * aChoices.length)];
-                let p = new Fraction(getRandomInt(-4, 4), [1, 2][Math.floor(Math.random() * 2)]);
-                let q = new Fraction(getRandomInt(-8, 8), [1, 2][Math.floor(Math.random() * 2)]);
+                
+                // 修正：ランダムな分母の選択方法を正しく修正（1か2になるように設定）
+                let denP = Math.random() < 0.5 ? 1 : 2;
+                let denQ = Math.random() < 0.5 ? 1 : 2;
+                
+                let p = new Fraction(getRandomInt(-4, 4), denP);
+                let q = new Fraction(getRandomInt(-8, 8), denQ);
 
                 // b = -2ap, c = ap^2 + q
                 let b = a.mul(p).mul(new Fraction(-2));
