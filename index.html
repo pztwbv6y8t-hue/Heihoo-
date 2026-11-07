@@ -4,7 +4,7 @@ html
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>平方完成 問題自動生成ツール</title>
+    <title>平方完成 問題自動生成ツール【難易度UP版】</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f7fa; color: #333; }
         h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; }
@@ -22,7 +22,7 @@ html
 </head>
 <body>
 
-    <h1>✨ 平方完成 問題ジェネレーター</h1>
+    <h1>✨ 平方完成 問題ジェネレーター (難易度高)</h1>
 
     <div class="config-box">
         <label for="prob-count">作問数：</label>
@@ -42,7 +42,6 @@ html
     </div>
 
     <script>
-        // 分数を扱うための簡易クラス
         class Fraction {
             constructor(num, den = 1) {
                 if (den === 0) throw new Error("⚠️ 分母に0は指定できません");
@@ -86,21 +85,26 @@ html
             ansList.innerHTML = '';
             document.getElementById('answer-section').style.display = 'none';
 
+            // ★ 2次の係数 a の選択肢を大幅に増やして複雑にしました
             const aChoices = [
-                new Fraction(1), new Fraction(2), new Fraction(3), 
-                new Fraction(-1), new Fraction(-2), new Fraction(-3),
-                new Fraction(1, 2), new Fraction(-1, 2)
+                new Fraction(1), new Fraction(2), new Fraction(3), new Fraction(4), new Fraction(5),
+                new Fraction(-1), new Fraction(-2), new Fraction(-3), new Fraction(-4),
+                new Fraction(1, 2), new Fraction(-1, 2), 
+                new Fraction(1, 3), new Fraction(-1, 3),
+                new Fraction(2, 3), new Fraction(-2, 3),
+                new Fraction(3, 2), new Fraction(-3, 2)
             ];
 
             for (let i = 1; i <= count; i++) {
                 let a = aChoices[Math.floor(Math.random() * aChoices.length)];
                 
-                // 修正：ランダムな分母の選択方法を正しく修正（1か2になるように設定）
-                let denP = Math.random() < 0.5 ? 1 : 2;
-                let denQ = Math.random() < 0.5 ? 1 : 2;
+                // ★ 頂点(p, q)の分母に「3」や「4」も混ざるようにして、さらに複雑に
+                let denChoices =;
+                let denP = denChoices[Math.floor(Math.random() * denChoices.length)];
+                let denQ = denChoices[Math.floor(Math.random() * denChoices.length)];
                 
-                let p = new Fraction(getRandomInt(-4, 4), denP);
-                let q = new Fraction(getRandomInt(-8, 8), denQ);
+                let p = new Fraction(getRandomInt(-5, 5), denP);
+                let q = new Fraction(getRandomInt(-10, 10), denQ);
 
                 // b = -2ap, c = ap^2 + q
                 let b = a.mul(p).mul(new Fraction(-2));
