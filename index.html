@@ -6,12 +6,11 @@
     <title>平方完成 問題自動生成ツール</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f7fa; color: #333; }
-        h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; font-weight: 600; letter-spacing: 1px; }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 30px; font-weight: 600; }
         .config-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; display: flex; gap: 15px; align-items: center; justify-content: center; flex-wrap: wrap; }
         input[type="number"], select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; text-align: center; background: white; }
         input[type="number"] { width: 70px; }
-        select { cursor: pointer; }
-        button { background: #3498db; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
+        button { background: #3498db; color: white; border: none; padding: 10px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; }
         button:hover { background: #2980b9; }
         .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         h2 { border-left: 5px solid #3498db; padding-left: 10px; margin-top: 0; color: #2c3e50; }
@@ -29,14 +28,14 @@
     <div class="config-box">
         <label for="difficulty">難易度：</label>
         <select id="difficulty">
-            <option value="lv1">Lv.1 全て1桁整数（初級）</option>
-            <option value="lv2">Lv.2 1桁整数＋簡単な分数（基本）</option>
-            <option value="lv3">Lv.3 1桁＋簡単な分数（少し複雑）</option>
-            <option value="lv4">Lv.4 定数項が2桁（中上級）</option>
-            <option value="lv5">Lv.5 2次項も2桁（上級）</option>
-            <option value="lv6">Lv.6 完全ランダム（プロ級）</option>
-            <option value="lv7">Lv.7 分母に5・7解禁（地獄級）</option>
-            <option value="lv8">Lv.8 分母も2桁解禁（超地獄級）</option>
+            <option value="1">Lv.1 全て1桁整数（初級）</option>
+            <option value="2">Lv.2 1桁整数＋簡単な分数（基本）</option>
+            <option value="3">Lv.3 1桁＋簡単な分数（少し複雑）</option>
+            <option value="4">Lv.4 定数項が2桁（中上級）</option>
+            <option value="5">Lv.5 2次項も2桁（上級）</option>
+            <option value="6">Lv.6 完全ランダム（プロ級）</option>
+            <option value="7">Lv.7 分母に5・7解禁（地獄級）</option>
+            <option value="8">Lv.8 分母も2桁解禁（超地獄級）</option>
         </select>
 
         <label for="prob-count">作問数：</label>
@@ -44,7 +43,6 @@
         <button onclick="generateProblems()">問題を生成する</button>
     </div>
 
-    <!-- 問題セクション -->
     <div class="section" id="problem-section" style="display:none;">
         <img src="top.png" alt="キャラクター1" class="page-img">
         <h2>問題</h2>
@@ -52,7 +50,6 @@
         <button class="toggle-btn" onclick="toggleAnswers()">答えを表示 / 非表示</button>
     </div>
 
-    <!-- 解答セクション -->
     <div class="section" id="answer-section">
         <h2>解答</h2>
         <div id="answer-list"></div>
@@ -61,177 +58,90 @@
 
     <script>
         class Fraction {
-            constructor(num, den = 1) {
-                if (den === 0) throw new Error("⚠️ 分母に0は指定できません");
-                let g = Fraction.gcd(Math.abs(num), Math.abs(den));
-                this.num = num / g;
-                this.den = den / g;
+            constructor(n, d = 1) {
+                if (d === 0) throw new Error("Zero denominator");
+                let g = Fraction.gcd(Math.abs(n), Math.abs(d));
+                this.num = n / g; this.den = d / g;
                 if (this.den < 0) { this.num = -this.num; this.den = -this.den; }
             }
             static gcd(a, b) { return b === 0 ? a : Fraction.gcd(b, a % b); }
             add(f) { return new Fraction(this.num * f.den + f.num * this.den, this.den * f.den); }
-            sub(f) { return new Fraction(this.num * f.den - f.num * this.den, this.den * f.den); }
             mul(f) { return new Fraction(this.num * f.num, this.den * f.den); }
-            neg() { return new Fraction(-this.num, this.den); }
             abs() { return new Fraction(Math.abs(this.num), this.den); }
             toString() { return this.den === 1 ? `${this.num}` : `${this.num}/${this.den}`; }
         }
 
-        function getRandomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function getRand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function getRandItem(arrStr) { let arr = arrStr.split(",").map(Number); return arr[Math.floor(Math.random() * arr.length)]; }
 
-        function formatTerm(f, power, isFirst = false) {
+        function formatTerm(f, p, isFirst = false) {
             if (f.num === 0) return "";
             let sign = f.num < 0 ? (isFirst ? "-" : "- ") : (isFirst ? "" : "+ ");
-            let absF = f.abs();
-            let valStr = absF.toString();
-
-            if (power === 2) {
-                return (absF.num === 1 && absF.den === 1) ? `${f.num < 0 ? "-" : ""}x²` : `${f.num < 0 ? "-" : ""}${valStr}x²`;
-            } else if (power === 1) {
-                return (absF.num === 1 && absF.den === 1) ? `${sign}x` : `${sign}${valStr}x`;
-            } else {
-                return `${sign}${valStr}`;
-            }
+            let absF = f.abs(); let s = absF.toString();
+            if (p === 2) return (s === "1") ? `${f.num < 0 ? "-" : ""}x²` : `${f.num < 0 ? "-" : ""}${s}x²`;
+            if (p === 1) return (s === "1") ? `${sign}x` : `${sign}${s}x`;
+            return `${sign}${s}`;
         }
 
         function generateProblems() {
-            const diff = document.getElementById('difficulty').value;
+            const lv = parseInt(document.getElementById('difficulty').value);
             const count = parseInt(document.getElementById('prob-count').value) || 5;
-            const probList = document.getElementById('problem-list');
-            const ansList = document.getElementById('answer-list');
-            
-            probList.innerHTML = '';
-            ansList.innerHTML = '';
+            const pList = document.getElementById('problem-list');
+            const aList = document.getElementById('answer-list');
+            pList.innerHTML = ''; aList.innerHTML = '';
             document.getElementById('answer-section').style.display = 'none';
-
-            // バグ回避用の分割配列
-            const s1to3 = "1,2,3,-1,-2,-3".split(",").map(Number);
-            const s1to5 = "1,2,3,4,5,-1,-2,-3,-4".split(",").map(Number);
-            const sFullInt = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,-1,-2,-3,-4,-5,-6,-7,-8,-9,-10,-11,-12,-13,-14,-15".split(",").map(Number);
-            const sLv5Int = "1,2,3,4,5,10,12,15,-1,-2,-3,-4,-10,-12,-15".split(",").map(Number);
-            
-            // 各難易度ごとの分母候補
-            const densLv2 = "1,2".split(",").map(Number);
-            const densLv3 = "1,2,3".split(",").map(Number);
-            const densLv7 = "1,2,3,5,7".split(",").map(Number);
-            // Lv.8用：1桁に加えて10, 12, 15などの2桁分母を追加
-            const densLv8 = "1,2,3,4,5,6,7,10,12,15".split(",").map(Number);
 
             for (let i = 1; i <= count; i++) {
                 let a, p, q;
+                let dens = "1";
+                if (lv >= 2) dens += ",2";
+                if (lv >= 3 && lv !== 4 && lv !== 5) dens += ",3";
+                if (lv >= 7) dens += ",5,7";
+                if (lv === 8) dens += ",4,6,10,12,15";
 
-                if (diff === "lv1") {
-                    a = new Fraction(s1to3[Math.floor(Math.random() * s1to3.length)]);
-                    p = new Fraction(getRandomInt(-2, 2));
-                    q = new Fraction(getRandomInt(-4, 4));
-                } 
-                else if (diff === "lv2") {
-                    const aChoices = "1,2,3,-1,-2,-3".split(",").map(Number);
-                    if (Math.random() < 0.7) {
-                        a = new Fraction(aChoices[Math.floor(Math.random() * aChoices.length)]);
-                    } else {
-                        a = new Fraction(Math.random() < 0.5 ? 1 : -1, 2);
-                    }
-                    let dp = densLv2[Math.floor(Math.random() * densLv2.length)];
-                    let dq = densLv2[Math.floor(Math.random() * densLv2.length)];
-                    p = new Fraction(getRandomInt(-4, 4), dp);
-                    q = new Fraction(getRandomInt(-8, 8), dq);
-                }
-                else if (diff === "lv3") {
+                let dp = getRandItem(dens), dq = getRandItem(dens);
+
+                if (lv === 1) {
+                    a = new Fraction(getRandItem("1,2,3,-1,-2,-3"));
+                    p = new Fraction(getRand(-2, 2), 1);
+                    q = new Fraction(getRand(-4, 4), 1);
+                } else {
+                    let aNum = getRandItem("1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,-1,-2,-3,-4,-5,-6,-7,-8,-9,-10,-11,-12,-13,-14,-15");
+                    if (lv <= 3) aNum = getRandItem("1,2,3,4,-1,-2,-3,-4");
+                    if (lv === 5) aNum = getRandItem("1,2,3,10,12,15,-1,-2,-3,-10,-12,-15");
+                    
                     if (Math.random() < 0.6) {
-                        a = new Fraction(s1to5[Math.floor(Math.random() * s1to5.length)]);
+                        a = new Fraction(aNum, 1);
                     } else {
-                        let dens = "2,3".split(",").map(Number);
-                        a = new Fraction(getRandomInt(-2, 2) || 1, dens[Math.floor(Math.random() * dens.length)]);
+                        let da = getRandItem(dens === "1" ? "1,2" : dens);
+                        a = new Fraction(getRand(-5, 5) || 1, da);
                     }
-                    p = new Fraction(getRandomInt(-5, 5), densLv3[Math.floor(Math.random() * densLv3.length)]);
-                    q = new Fraction(getRandomInt(-10, 10), densLv3[Math.floor(Math.random() * densLv3.length)]);
+                    let rP = (lv <= 3) ? 5 : (lv === 5) ? 8 : 12;
+                    let rQ = (lv <= 3) ? 10 : (lv === 5) ? 25 : 35;
+                    p = new Fraction(getRand(-rP, rP), dp);
+                    q = new Fraction(getRand(-rQ, rQ), dq);
                 }
-                else if (diff === "lv4") {
-                    if (Math.random() < 0.6) {
-                        a = new Fraction(s1to5[Math.floor(Math.random() * s1to5.length)]);
-                    } else {
-                        a = new Fraction(Math.random() < 0.5 ? 1 : -1, 2);
-                    }
-                    p = new Fraction(getRandomInt(-12, 12), densLv2[Math.floor(Math.random() * densLv2.length)]);
-                    q = new Fraction(getRandomInt(-35, 35), densLv2[Math.floor(Math.random() * densLv2.length)]);
-                }
-                else if (diff === "lv5") {
-                    if (Math.random() < 0.6) {
-                        a = new Fraction(sLv5Int[Math.floor(Math.random() * sLv5Int.length)]);
-                    } else {
-                        let dens = "2,3".split(",").map(Number);
-                        a = new Fraction(getRandomInt(-3, 3) || 1, dens[Math.floor(Math.random() * dens.length)]);
-                    }
-                    p = new Fraction(getRandomInt(-8, 8), densLv2[Math.floor(Math.random() * densLv2.length)]);
-                    q = new Fraction(getRandomInt(-25, 25), densLv2[Math.floor(Math.random() * densLv2.length)]);
-                }
-                else if (diff === "lv6") {
-                    if (Math.random() < 0.7) {
-                        a = new Fraction(sFullInt[Math.floor(Math.random() * sFullInt.length)]);
-                    } else {
-                        let dens = "2,3".split(",").map(Number);
-                        a = new Fraction(getRandomInt(-5, 5) || 1, dens[Math.floor(Math.random() * dens.length)]);
-                    }
-                    p = new Fraction(getRandomInt(-8, 8), densLv3[Math.floor(Math.random() * densLv3.length)]);
-                    q = new Fraction(getRandomInt(-25, 25), densLv3[Math.floor(Math.random() * densLv3.length)]);
-                }
-                else if (diff === "lv7") {
-                    if (Math.random() < 0.6) {
-                        a = new Fraction(sFullInt[Math.floor(Math.random() * sFullInt.length)]);
-                    } else {
-                        let dens = "2,3,5,7".split(",").map(Number);
-コードは注意してご使用ください。
-a = new Fraction(getRandomInt(-10, 10) || 1, dens[Math.floor(Math.random() * dens.length)]);
-}
-p = new Fraction(getRandomInt(-10, 10), densLv7[Math.floor(Math.random() * densLv7.length)]);
-q = new Fraction(getRandomInt(-30, 30), densLv7[Math.floor(Math.random() * densLv7.length)]);
-}
-else {
-// ★Lv.8 分母も2桁解禁モード
-if (Math.random() < 0.5) {
-a = new Fraction(sFullInt[Math.floor(Math.random() * sFullInt.length)]);
-} else {
-let dens = "2,3,4,5,6,7,10,12,15".split(",").map(Number);
-a = new Fraction(getRandomInt(-10, 10) || 1, dens[Math.floor(Math.random() * dens.length)]);
-}
-p = new Fraction(getRandomInt(-12, 12), densLv8[Math.floor(Math.random() * densLv8.length)]);
-q = new Fraction(getRandomInt(-35, 35), densLv8[Math.floor(Math.random() * densLv8.length)]);
-}
-// b = -2ap, c = ap^2 + q
-let b = a.mul(p).mul(new Fraction(-2));
-let c = a.mul(p).mul(p).add(q);
-// 問題文字列化
-let t2 = formatTerm(a, 2, true);
-let t1 = formatTerm(b, 1);
-let t0 = formatTerm(c, 0);
-let probStr = y = ${t2} ${t1} ${t0}.replace(/\s+/g, ' ').trim();
-// 解答文字列化
-let aPart = "";
-if (a.num === -1 && a.den === 1) aPart = "-";
-else if (!(a.num === 1 && a.den === 1)) aPart = a.toString();
-let ansInside = "";
-if (p.num === 0) {
-ansInside = ${aPart}x²;
-} else {
-let pSign = p.num < 0 ? "+ " : "- ";
-let absP = p.abs().toString();
-ansInside = ${aPart}(x ${pSign}${absP})²;
-}
-let ansStr = ansInside;
-if (q.num !== 0) {
-let qSign = q.num > 0 ? " + " : " - ";
-ansStr += ${qSign}${q.abs().toString()};
-}
-probList.innerHTML += <div class="list-item">(${i}) &nbsp; ${probStr}</div>;
-ansList.innerHTML += <div class="list-item">(${i}) &nbsp; y = ${ansStr}</div>;
-}
-document.getElementById('problem-section').style.display = 'block';
-}
-function toggleAnswers() {
-const ansSec = document.getElementById('answer-section');
-ansSec.style.display = ansSec.style.display === 'none' ? 'block' : 'none';
-if(ansSec.style.display === 'block') {
-ansSec.scrollIntoView({ behavior: 'smooth' });
-}
-}
+
+                let b = a.mul(p).mul(new Fraction(-2, 1));
+                let c = a.mul(p).mul(p).add(q);
+
+                let probStr = `y = ${formatTerm(a, 2, true)} ${formatTerm(b, 1)} ${formatTerm(c, 0)}`.replace(/\s+/g, ' ').trim();
+
+                let aPart = (a.num === -1 && a.den === 1) ? "-" : (a.toString() === "1") ? "" : a.toString();
+                let ansInside = (p.num === 0) ? `${aPart}x²` : `${aPart}(x ${p.num < 0 ? "+ " : "- "}${p.abs().toString()})²`;
+                let ansStr = (q.num === 0) ? ansInside : `${ansInside} ${q.num > 0 ? "+ " : "- "}${q.abs().toString()}`;
+
+                pList.innerHTML += `<div class="list-item">(${i}) &nbsp; ${probStr}</div>`;
+                aList.innerHTML += `<div class="list-item">(${i}) &nbsp; y = ${ansStr}</div>`;
+            }
+            document.getElementById('problem-section').style.display = 'block';
+        }
+
+        function toggleAnswers() {
+            const ansSec = document.getElementById('answer-section');
+            ansSec.style.display = ansSec.style.display === 'none' ? 'block' : 'none';
+            if (ansSec.style.display === 'block') ansSec.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
